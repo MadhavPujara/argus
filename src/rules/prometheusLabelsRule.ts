@@ -45,12 +45,9 @@ export class PrometheusLabelsRule extends Rule {
       if (ts.isCallExpression(node)) {
         const signature = checker.getResolvedSignature(node);
         if (signature) {
-          const declaration = signature.declaration;
-          if (declaration && ts.isMethodDeclaration(declaration)) {
-            const methodName = declaration.name.getText();
-            if (methodName === 'query') {
-              this.checkQueryCall(node, sourceFile, violations);
-            }
+          const configArg = node.arguments[1];
+          if (configArg && this.hasQueryConfiguration(configArg.getText())) {
+            this.checkQueryCall(node, sourceFile, violations);
           }
         }
       }
@@ -59,6 +56,10 @@ export class PrometheusLabelsRule extends Rule {
 
     ts.forEachChild(sourceFile, visit);
     return violations;
+  }
+
+  private hasQueryConfiguration(configText: string): boolean {
+    return configText.includes('options') && configText.includes('queryIdentifier');
   }
 
   private checkQueryCall(
@@ -72,7 +73,7 @@ export class PrometheusLabelsRule extends Rule {
     if (node.arguments.length < 2) {
       violations.push({
         ...location,
-        message: 'Database query is missing prometheusLabels configuration',
+        message: 'Query is missing configuration',
         severity: this.severity,
         rule: this.name
       });
@@ -81,21 +82,11 @@ export class PrometheusLabelsRule extends Rule {
 
     const configArg = node.arguments[1];
     const configText = configArg.getText();
-    if (!configText.includes('prometheusLabels')) {
-      violations.push({
-        ...location,
-        message: 'Database query configuration must include prometheusLabels',
-        severity: this.severity,
-        rule: this.name
-      });
-      return;
-    }
-
-    const match = configText.match(/query:\s*['"]([^'"]+)['"]/);
+    const match = configText.match(/queryIdentifier:\s*['"]([^'"]+)['"]/);
     if (!match) {
       violations.push({
         ...location,
-        message: 'prometheusLabels must include a query identifier',
+        message: 'Query must include a queryIdentifier',
         severity: this.severity,
         rule: this.name
       });
@@ -106,7 +97,7 @@ export class PrometheusLabelsRule extends Rule {
     if (actualIdentifier !== this.queryIdentifier) {
       violations.push({
         ...location,
-        message: `Query identifier in prometheusLabels must match exactly: expected "${this.queryIdentifier}", got "${actualIdentifier}"`,
+        message: `Query identifier must match exactly: expected "${this.queryIdentifier}", got "${actualIdentifier}"`,
         severity: this.severity,
         rule: this.name
       });
