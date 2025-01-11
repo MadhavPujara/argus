@@ -82,23 +82,38 @@ export class PrometheusLabelsRule extends Rule {
 
     const configArg = node.arguments[1];
     const configText = configArg.getText();
-    const match = configText.match(/queryIdentifier:\s*['"]([^'"]+)['"]/);
-    if (!match) {
+    const hasQueryId = configText.includes('queryIdentifier');
+    const hasPromLabels = configText.includes('prometheusLabels');
+
+    if (hasQueryId && !hasPromLabels) {
       violations.push({
         ...location,
-        message: 'Query must include a queryIdentifier',
-        severity: this.severity,
+        message: 'Query has queryIdentifier but missing prometheusLabels configuration',
+        severity: 'error',
         rule: this.name
       });
       return;
     }
 
-    const actualIdentifier = match[1];
-    if (actualIdentifier !== this.queryIdentifier) {
+    if (!hasQueryId || !hasPromLabels) {
+      return;
+    }
+
+    const queryIdMatch = configText.match(/queryIdentifier:\s*['"]([^'"]+)['"]/);
+    const promLabelsMatch = configText.match(/prometheusLabels:\s*{\s*query:\s*['"]([^'"]+)['"]/);
+
+    if (!queryIdMatch || !promLabelsMatch) {
+      return;
+    }
+
+    const queryId = queryIdMatch[1];
+    const promLabelsId = promLabelsMatch[1];
+
+    if (queryId !== promLabelsId) {
       violations.push({
         ...location,
-        message: `Query identifier must match exactly: expected "${this.queryIdentifier}", got "${actualIdentifier}"`,
-        severity: this.severity,
+        message: `Query identifier (${queryId}) does not match prometheusLabels query (${promLabelsId})`,
+        severity: 'warning',
         rule: this.name
       });
     }
