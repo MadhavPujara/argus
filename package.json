@@ -1,5 +1,5 @@
 {
-  "name": "@irev/argus",
+  "name": "argus",
   "version": "1.0.0",
   "description": "A vigilant TypeScript static analysis tool for monitoring database query patterns, named after the all-seeing giant of Greek mythology",
   "type": "module",
