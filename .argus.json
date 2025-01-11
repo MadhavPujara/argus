@@ -1,0 +1,10 @@
+{
+  "rules": {
+    "prometheus-labels": {
+      "severity": "error",
+      "queryIdentifier": "get_users"
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["**/*.test.ts", "**/*.spec.ts"]
+} 
