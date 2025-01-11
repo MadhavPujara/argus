@@ -2,12 +2,13 @@
 
 import { Command } from 'commander';
 import { execSync } from 'child_process';
-import { RuleOptions } from '../core/rule';
-import { Analyzer } from '../core/analyzer';
-import { ConsoleReporter } from '../reporter/reporter';
-import { PrometheusLabelsRule } from '../rules/prometheusLabelsRule';
+import { RuleOptions } from '../core/rule.js';
+import { Analyzer } from '../core/analyzer.js';
+import { ConsoleReporter } from '../reporter/reporter.js';
+import { PrometheusLabelsRule } from '../rules/prometheusLabelsRule.js';
 import * as fs from 'fs';
 import * as path from 'path';
+import { glob } from 'glob';
 
 interface ArgusConfig {
   rules: {
@@ -15,9 +16,12 @@ interface ArgusConfig {
   };
 }
 
-const program = new Command()
+const program = new Command();
+
+program
+  .name('argus')
+  .description('A vigilant TypeScript static analysis tool')
   .version('1.0.0')
-  .description('A static analysis tool for monitoring database query patterns')
   .option('-c, --config <path>', 'path to config file', './argus.config.json')
   .hook('preAction', () => {
     // Hook implementation
@@ -32,12 +36,26 @@ function loadConfig(): ArgusConfig {
   return { rules: { 'prometheus-labels': { enabled: true } } };
 }
 
-async function runAnalysis(files: string[]): Promise<boolean> {
+async function expandGlobs(patterns: string[]): Promise<string[]> {
+  const files: string[] = [];
+  for (const pattern of patterns) {
+    const matches = await glob(pattern);
+    files.push(...matches);
+  }
+  return files;
+}
+
+async function runAnalysis(patterns: string[]): Promise<boolean> {
+  const files = await expandGlobs(patterns);
+  if (files.length === 0) {
+    console.log('No files found to analyze');
+    return true;
+  }
+
   const config = loadConfig();
   const reporter = new ConsoleReporter();
   const analyzer = new Analyzer(reporter);
 
-  // Add rules based on config
   analyzer.addRule(new PrometheusLabelsRule({
     enabled: true,
     queryIdentifier: 'default_query',
@@ -46,11 +64,6 @@ async function runAnalysis(files: string[]): Promise<boolean> {
 
   return analyzer.analyzeFiles(files);
 }
-
-program
-  .name('argus')
-  .description('A vigilant TypeScript static analysis tool')
-  .version('1.0.0');
 
 program
   .command('check')

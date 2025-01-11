@@ -1,5 +1,6 @@
-import { Rule } from './rule';
-import { Reporter } from '../reporter/reporter';
+import { Rule } from './rule.js';
+import { Reporter } from '../reporter/reporter.js';
+import { RuleViolation } from './rule.js';
 
 export class Analyzer {
   private rules: Rule[] = [];
@@ -14,23 +15,19 @@ export class Analyzer {
   }
 
   async analyzeFiles(files: string[]): Promise<boolean> {
-    let hasErrors = false;
+    let hasViolations = false;
 
     for (const file of files) {
-      try {
-        for (const rule of this.rules) {
-          const violations = await rule.analyze(file);
-          if (violations.length > 0) {
-            hasErrors = true;
-            violations.forEach(violation => this.reporter.report(violation));
-          }
-        }
-      } catch (error) {
-        this.reporter.reportError(file, error as Error);
-        hasErrors = true;
+      const violations: RuleViolation[] = [];
+      for (const rule of this.rules) {
+        violations.push(...await rule.analyze(file));
+      }
+      if (violations.length > 0) {
+        hasViolations = true;
+        violations.forEach((violation: RuleViolation) => this.reporter.report(violation));
       }
     }
 
-    return !hasErrors;
+    return !hasViolations;
   }
 } 

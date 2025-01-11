@@ -1,12 +1,15 @@
 import * as ts from 'typescript';
-import { Rule, RuleViolation, RuleOptions } from '../core/rule';
+import { Rule, RuleViolation, RuleOptions } from '../core/rule.js';
 
 interface PrometheusLabelsRuleOptions extends RuleOptions {
   queryIdentifier: string;
+  enabled?: boolean;
 }
 
 export class PrometheusLabelsRule extends Rule {
   private queryIdentifier: string;
+  protected severity: 'error' | 'warning' = 'error';
+  protected name: string = 'prometheus-labels';
 
   constructor(options: PrometheusLabelsRuleOptions) {
     super('prometheus-labels', options);
