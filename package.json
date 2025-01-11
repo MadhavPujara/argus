@@ -24,8 +24,8 @@
     "database",
     "argus"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": "Madhav Pujara",
+  "license": "MIT",
   "engines": {
     "node": ">=14.0.0"
   },
